@@ -59,7 +59,7 @@ class NeimanSpider(scrapy.Spider):
 					if subcategory_name:
 						request.meta['subcategory_name'] = ' '.join(subcategory_name[0].split())
 					
-					ipdb.set_trace()
+#					ipdb.set_trace()
 					yield request
 
 	def item_list(self, response):
