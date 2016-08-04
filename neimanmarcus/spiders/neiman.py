@@ -75,7 +75,7 @@ class NeimanSpider(scrapy.Spider):
 			
 
 		for item_link in item_links:			
-			request = Request(item_link,self.item_detail,dont_filter=True)
+			request = Request(item_link,self.item_detail)
 			request.meta['gender'] = igender
 			request.meta['category'] = ' '.join(response.meta['category_name'][0].split())
 			request.meta['subcategory'] = response.meta['subcategory_name']
@@ -86,11 +86,11 @@ class NeimanSpider(scrapy.Spider):
 		total_items = hxs.xpath('//span[@id="numItems"]/text()').extract()
 		if total_items:
 			pages = int(total_items[0]) / 120
-		
-		for page_num in range(2, pages+1):
-			catid = response.url.rsplit('/',2)[-2].split('_')[0]
+		# ipdb.set_trace()
+		catid = response.url.rsplit('/',2)[-2].split('_')[0]
+		for page_num in range(2, pages+1):			
 			link = urlparse.urljoin(response.url,'#userConstrainedResults=true&refinements=&page={0}&pageSize=120&sort=PCS_SORT&definitionPath=/nm/commerce/pagedef_rwd/template/EndecaDrivenHome&onlineOnly=&allStoresInput=false&rwd=true&catalogId={1}&selectedRecentSize=&activeFavoriteSizesCount=0&activeInteraction=true'.format(page_num,catid))
-			yield Request(link,self.parse,dont_filter=True)		
+			yield Request(link,self.item_list)		
 
 
 	def item_detail(self, response):
