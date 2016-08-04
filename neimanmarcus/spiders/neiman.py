@@ -54,7 +54,7 @@ class NeimanSpider(scrapy.Spider):
 				if url:			
 					url = urlparse.urljoin(response.url,url[0])
 
-					request = Request(url, self.item_list, dont_filter=True)
+					request = Request(url, self.pagination)
 					# request.meta['category_name'] = category
 					global itemcategory
 					itemcategory = category
@@ -68,7 +68,19 @@ class NeimanSpider(scrapy.Spider):
 					# ipdb.set_trace()
 					yield request
 
-	def item_list(self, response):
+	def pagination(self, response):
+		hxs = Selector(response)
+		#pagination
+		total_pages = hxs.xpath('normalize-space(//ul[@id="epagingTop"]/li[@class="pageOffset"][last()]/a/text())').extract()
+		total_items = hxs.xpath('//span[@id="numItems"]/text()').extract()
+		if total_items:
+			pages = int(total_items[0]) / 120			
+			catid = response.url.rsplit('/',2)[-2].split('_')[0]
+			for page_num in range(2, pages+1):			
+				link = urlparse.urljoin(response.url,'#userConstrainedResults=true&refinements=&page={0}&pageSize=120&sort=PCS_SORT&definitionPath=/nm/commerce/pagedef_rwd/template/EndecaDrivenHome&onlineOnly=&allStoresInput=false&rwd=true&catalogId={1}&selectedRecentSize=&activeFavoriteSizesCount=0&activeInteraction=true'.format(page_num,catid))				
+				yield Request(link,self.item_list,dont_filter=True)		
+
+	def item_list(self, response):		
 		hxs = Selector(response)
 		item_links = hxs.xpath('//ul[@class="category-items"]/li[@class="category-item"]/figure/div/a/@href').extract()
 		item_links = [urlparse.urljoin(response.url,item_link) for item_link in item_links]
@@ -78,10 +90,9 @@ class NeimanSpider(scrapy.Spider):
 		igender = None
 		if gender and 'women' in gender[0].lower():
 			igender = 'Women'
-			
-		# ipdb.set_trace() 
+					
 		for item_link in item_links:			
-			request = Request(item_link,self.item_detail)
+			request = Request(item_link,self.item_detail,dont_filter=True)
 			request.meta['gender'] = igender
 			# if request.meta['category']:
 			global itemcategory
@@ -91,17 +102,6 @@ class NeimanSpider(scrapy.Spider):
 
 			
 			yield request
-
-		#pagination
-		total_pages = hxs.xpath('normalize-space(//ul[@id="epagingTop"]/li[@class="pageOffset"][last()]/a/text())').extract()
-		total_items = hxs.xpath('//span[@id="numItems"]/text()').extract()
-		if total_items:
-			pages = int(total_items[0]) / 120
-		# ipdb.set_trace()
-			catid = response.url.rsplit('/',2)[-2].split('_')[0]
-			for page_num in range(2, pages+1):			
-				link = urlparse.urljoin(response.url,'#userConstrainedResults=true&refinements=&page={0}&pageSize=120&sort=PCS_SORT&definitionPath=/nm/commerce/pagedef_rwd/template/EndecaDrivenHome&onlineOnly=&allStoresInput=false&rwd=true&catalogId={1}&selectedRecentSize=&activeFavoriteSizesCount=0&activeInteraction=true'.format(page_num,catid))
-				yield Request(link,self.item_list)		
 
 
 	def item_detail(self, response):
