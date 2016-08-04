@@ -148,6 +148,9 @@ class NeimanSpider(scrapy.Spider):
 					if len(price) >= 2:						
 						item['currency'] = price[0]
 						item['price'] = price[1]
+					else:
+						item['currency'] = 'USD'
+						item['price'] = price[0].strip('$')
 
 					item['category'] = response.meta['category']
 
