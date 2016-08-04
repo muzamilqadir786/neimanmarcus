@@ -82,11 +82,15 @@ class NeimanSpider(scrapy.Spider):
 			yield request
 
 		#pagination
-		# total_pages = hxs.xpath('normalize-space(//ul[@id="epagingTop"]/li[@class="pageOffset"][last()]/a/text())').extract()
-		# # print total_pages
-		# for page_num in range(2,int(total_pages)):
-		# 	link = 'http://www.neimanmarcus.com/en-de/All-Shoes/cat47190746_cat13030734_cat000141/c.cat#userConstrainedResults=true&refinements=&page={0}&pageSize=120&sort=PCS_SORT&definitionPath=/nm/commerce/pagedef_rwd/template/EndecaDrivenHome&onlineOnly=&allStoresInput=false&rwd=true&catalogId=cat47190746&selectedRecentSize=&activeFavoriteSizesCount=0&activeInteraction=true'.format(page_num)
-		# 	yield Request(link,self.parse,dont_filter=True)		
+		total_pages = hxs.xpath('normalize-space(//ul[@id="epagingTop"]/li[@class="pageOffset"][last()]/a/text())').extract()
+		total_items = hxs.xpath('//span[@id="numItems"]/text()').extract()
+		if total_items:
+			pages = int(total_items[0]) / 120
+		
+		for page_num in range(2, pages+1):
+			catid = response.url.rsplit('/',2)[-2].split('_')[0]
+			link = urlparse.urljoin(response.url,'#userConstrainedResults=true&refinements=&page={0}&pageSize=120&sort=PCS_SORT&definitionPath=/nm/commerce/pagedef_rwd/template/EndecaDrivenHome&onlineOnly=&allStoresInput=false&rwd=true&catalogId={1}&selectedRecentSize=&activeFavoriteSizesCount=0&activeInteraction=true'.format(page_num,catid))
+			yield Request(link,self.parse,dont_filter=True)		
 
 
 	def item_detail(self, response):
@@ -174,4 +178,8 @@ class NeimanSpider(scrapy.Spider):
 					# 	item['image_urls'] = image_urls
 
 					# print item
+					# print  item['price']
 					yield item
+
+
+# userConstrainedResults=true&refinements=&page=2&pageSize=120&sort=PCS_SORT&definitionPath=/nm/commerce/pagedef_rwd/template/EndecaDrivenHome&onlineOnly=&allStoresInput=false&rwd=true&catalogId=cat48490746&selectedRecentSize=&activeFavoriteSizesCount=0&activeInteraction=true
