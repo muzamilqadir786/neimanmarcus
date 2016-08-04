@@ -16,6 +16,8 @@ CHOICES = (
 	('BEAUTY', 'BEAUTY')
 )
 
+itemcategory = itemsubcategory = None
+
 class NeimanSpider(scrapy.Spider):
 	name = "neiman"
 	allowed_domains = ["www.neimanmarcus.com"]
@@ -53,13 +55,17 @@ class NeimanSpider(scrapy.Spider):
 					url = urlparse.urljoin(response.url,url[0])
 
 					request = Request(url, self.item_list, dont_filter=True)
-					request.meta['category_name'] = category
+					# request.meta['category_name'] = category
+					global itemcategory
+					itemcategory = category
 
 					subcategory_name = subcategory_url.xpath('./text()[normalize-space()]').extract()
 					if subcategory_name:
-						request.meta['subcategory_name'] = ' '.join(subcategory_name[0].split())
+						# request.meta['subcategory_name'] = ' '.join(subcategory_name[0].split())
+						global itemsubcategory
+						itemsubcategory = ' '.join(subcategory_name[0].split())						
 					
-#					ipdb.set_trace()
+					# ipdb.set_trace()
 					yield request
 
 	def item_list(self, response):
@@ -73,12 +79,17 @@ class NeimanSpider(scrapy.Spider):
 		if gender and 'women' in gender[0].lower():
 			igender = 'Women'
 			
-
+		# ipdb.set_trace() 
 		for item_link in item_links:			
 			request = Request(item_link,self.item_detail)
 			request.meta['gender'] = igender
-			request.meta['category'] = ' '.join(response.meta['category_name'][0].split())
-			request.meta['subcategory'] = response.meta['subcategory_name']
+			# if request.meta['category']:
+			global itemcategory
+			global itemsubcategory
+			request.meta['category'] = ' '.join(itemcategory[0].split())			
+			request.meta['subcategory'] = itemsubcategory
+
+			
 			yield request
 
 		#pagination
@@ -87,10 +98,10 @@ class NeimanSpider(scrapy.Spider):
 		if total_items:
 			pages = int(total_items[0]) / 120
 		# ipdb.set_trace()
-		catid = response.url.rsplit('/',2)[-2].split('_')[0]
-		for page_num in range(2, pages+1):			
-			link = urlparse.urljoin(response.url,'#userConstrainedResults=true&refinements=&page={0}&pageSize=120&sort=PCS_SORT&definitionPath=/nm/commerce/pagedef_rwd/template/EndecaDrivenHome&onlineOnly=&allStoresInput=false&rwd=true&catalogId={1}&selectedRecentSize=&activeFavoriteSizesCount=0&activeInteraction=true'.format(page_num,catid))
-			yield Request(link,self.item_list)		
+			catid = response.url.rsplit('/',2)[-2].split('_')[0]
+			for page_num in range(2, pages+1):			
+				link = urlparse.urljoin(response.url,'#userConstrainedResults=true&refinements=&page={0}&pageSize=120&sort=PCS_SORT&definitionPath=/nm/commerce/pagedef_rwd/template/EndecaDrivenHome&onlineOnly=&allStoresInput=false&rwd=true&catalogId={1}&selectedRecentSize=&activeFavoriteSizesCount=0&activeInteraction=true'.format(page_num,catid))
+				yield Request(link,self.item_list)		
 
 
 	def item_detail(self, response):
