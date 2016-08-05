@@ -21,32 +21,14 @@ itemcategory = itemsubcategory = None
 class NeimanSpider(scrapy.Spider):
 	name = "neiman"
 	allowed_domains = ["www.neimanmarcus.com"]
-	start_urls = (
-		# 'http://www.neimanmarcus.com/',		
-	# 	'http://www.neimanmarcus.com/en-de/All-Shoes/cat47190746_cat13030734_cat000141/c.cat',
-	# 	# 'http://www.neimanmarcus.com/en-de/All-Shoes/cat47190746_cat13030734_cat000141/c.cat#userConstrainedResults=true&refinements=&page=4&pageSize=120&sort=PCS_SORT&definitionPath=/nm/commerce/pagedef_rwd/template/EndecaDrivenHome&onlineOnly=&allStoresInput=false&rwd=true&catalogId=cat47190746&selectedRecentSize=&activeFavoriteSizesCount=0&activeInteraction=true',
-	# 	# 'http://www.neimanmarcus.com/en-fr/Saint-Laurent-Chain-Wrapped-Tumbled-Leather-Boot-Black-All-Shoes/prod180470029_cat47190746__/p.prod',
+	start_urls = (	
 		'http://www.neimanmarcus.com/service/sitemap.jsp',		
 	)
 
-	# rules = (
-	# 	Rule(LinkExtractor(allow=(r'/All-Apparel/.*',)), callback='parse_item',follow=True),		
-	# 	# Rule(LinkExtractor(allow=(r'/Handbags/All-Handbags/.*',)), callback='parse_item',follow=True),		
-
-	# )
-
-	# def parse_start_url(self, response):
-	# 	list(self.item_detail(response))
-
-	def parse(self, response):
-		print response.url
-		hxs = Selector(response)
-		# categories = hxs.xpath('//*[@id="contentbody"]/table[3]/tr[2]//a[contains(@href,"c.cat")]')
-		categories = hxs.xpath('//*[@id="contentbody"]/table[3]/tr[2]/td[2]/table/tr/td[2]/table/tr[2]/td')
-		# categories = [urlparse.urljoin(response.url,category_url) for category_url in categories]
+	def parse(self, response):		
+		hxs = Selector(response)		
+		categories = hxs.xpath('//*[@id="contentbody"]/table[3]/tr[2]/td[2]/table/tr/td[2]/table/tr[2]/td')		
 		for category_url in categories:
-			# tds = category_url.xpath('./td')
-			# for td in 
 			category = category_url.xpath('./font/text()').extract()
 			subcategory_urls = category_url.xpath('.//a[contains(@href,"c.cat")]')
 			for subcategory_url in subcategory_urls:
@@ -54,18 +36,8 @@ class NeimanSpider(scrapy.Spider):
 				if url:			
 					url = urlparse.urljoin(response.url,url[0])
 
-					request = Request(url, self.pagination)
-					# request.meta['category_name'] = category
-					global itemcategory
-					itemcategory = category
-
-					subcategory_name = subcategory_url.xpath('./text()[normalize-space()]').extract()
-					if subcategory_name:
-						# request.meta['subcategory_name'] = ' '.join(subcategory_name[0].split())
-						global itemsubcategory
-						itemsubcategory = ' '.join(subcategory_name[0].split())						
-					
-					# ipdb.set_trace()
+					request = Request(url, self.pagination)					
+					request.meta['category'] = category
 					yield request
 
 	def pagination(self, response):
@@ -78,7 +50,9 @@ class NeimanSpider(scrapy.Spider):
 			catid = response.url.rsplit('/',2)[-2].split('_')[0]
 			for page_num in range(2, pages+1):			
 				link = urlparse.urljoin(response.url,'#userConstrainedResults=true&refinements=&page={0}&pageSize=120&sort=PCS_SORT&definitionPath=/nm/commerce/pagedef_rwd/template/EndecaDrivenHome&onlineOnly=&allStoresInput=false&rwd=true&catalogId={1}&selectedRecentSize=&activeFavoriteSizesCount=0&activeInteraction=true'.format(page_num,catid))				
-				yield Request(link,self.item_list,dont_filter=True)		
+				request = Request(link,self.item_list,dont_filter=True)		
+				request.meta['category'] = response.meta['category']
+				yield request
 
 	def item_list(self, response):		
 		hxs = Selector(response)
@@ -90,16 +64,20 @@ class NeimanSpider(scrapy.Spider):
 		igender = None
 		if gender and 'women' in gender[0].lower():
 			igender = 'Women'
+
+		category = hxs.xpath('//a[@itemprop="url" and @class="silo-link current"]/text()').extract()
+		subcategory = hxs.xpath('normalize-space(//a[@class="catalognavOpenItem active "]/text())').extract()
 					
 		for item_link in item_links:			
 			request = Request(item_link,self.item_detail,dont_filter=True)
 			request.meta['gender'] = igender
-			# if request.meta['category']:
-			global itemcategory
-			global itemsubcategory
-			request.meta['category'] = ' '.join(itemcategory[0].split())			
-			request.meta['subcategory'] = itemsubcategory
+			request.meta['category'] = response.meta['category']
+			# if category:
+			# 	request.meta['category'] = category
+			if subcategory:
+				request.meta['subcategory'] = subcategory
 
+			# ipdb.set_trace()
 			
 			yield request
 
@@ -120,7 +98,7 @@ class NeimanSpider(scrapy.Spider):
 		if image_urls:
 			for image_url in image_urls:
 				if str(image_url).endswith('z.jpg'):
-					# item['image_urls'] = image_url
+					
 					item['im_name'] = image_url.rsplit('/',1)[-1].replace('.jpg','')
 					
 					item['im_url'] = image_url
@@ -179,20 +157,12 @@ class NeimanSpider(scrapy.Spider):
 
 					item['im_url_md'] = str(image_url).replace('z.jpg','k.jpg')
 					
-					item['im_url_display'] = str(image_urls[0]).replace('z.jpg','n.jpg')
-
+					# item['im_url_display'] = str(image_urls[0]).replace('z.jpg','n.jpg')
+					# if item['im_url_small'].endswith('mn.jpg'):
+					# 	img_url_display = item['im_url_small']
+					item['im_url_display'] = item['im_url_small'].rsplit('_',1)[0] + '_mn.jpg'
 					# ipdb.set_trace()
 
-					# image_urls = hxs.xpath('//div[@id="prod-img"]/div/div[@class="slick-track"]/div/img/@src').extract()
-					# image_urls = hxs.xpath('//div[@class="images"]//div[contains(@class,"img-wrap")]/img/@src').extract()
-					# image_urls = hxs.xpath('//div[@class="images"]//div[contains(contains(@class,"img-wrap slick-slide")]/img/@src').extract()
-					# image_urls = hxs.xpath('//div[@class="images"]//div[@class="slick-track"]/div/img/@src').extract()
-					# print image_urls
-					# if image_urls:
-					# 	item['image_urls'] = image_urls
-
-					# print item
-					# print  item['price']
 					yield item
 
 
