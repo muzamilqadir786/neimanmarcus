@@ -26,19 +26,24 @@ class NeimanSpider(scrapy.Spider):
 	)
 
 	def parse(self, response):		
-		hxs = Selector(response)		
-		categories = hxs.xpath('//*[@id="contentbody"]/table[3]/tr[2]/td[2]/table/tr/td[2]/table/tr[2]/td')		
-		for category_url in categories:
-			category = category_url.xpath('./font/text()').extract()
-			subcategory_urls = category_url.xpath('.//a[contains(@href,"c.cat")]')
-			for subcategory_url in subcategory_urls:
-				url = subcategory_url.xpath('./@href').extract()
-				if url:			
-					url = urlparse.urljoin(response.url,url[0])
+		# hxs = Selector(response)		
+		# categories = hxs.xpath('//*[@id="contentbody"]/table[3]/tr[2]/td[2]/table/tr/td[2]/table/tr[2]/td')		
+		# categories = hxs.xpath('http://www.neimanmarcus.com/en-pk/All-Shoes/cat47190746_cat13030734_cat000141/c.cat')
+		# for category_url in categories:
+			# category = category_url.xpath('./font/text()').extract()
+			# subcategory_urls = category_url.xpath('.//a[contains(@href,"c.cat")]')
+			# for subcategory_url in subcategory_urls:
+				# url = subcategory_url.xpath('./@href').extract()
+				# if url:			
+				# 	url = urlparse.urljoin(response.url,url[0])
 
-					request = Request(url, self.pagination)					
-					request.meta['category'] = category
-					yield request
+					# request = Request(url, self.pagination)					
+					# request.meta['category'] = category
+					# yield request
+		url = 'http://www.neimanmarcus.com/en-pk/All-Shoes/cat47190746_cat13030734_cat000141/c.cat'
+		request = Request(url, self.pagination)					
+		request.meta['category'] = 'All Shoes'
+		yield request
 
 	def pagination(self, response):
 		hxs = Selector(response)
@@ -143,7 +148,7 @@ class NeimanSpider(scrapy.Spider):
 
 					item['category'] = response.meta['category']
 
-					item['subcategory'] = response.meta['subcategory']
+					# item['subcategory'] = response.meta['subcategory']
 
 					item['gender'] = response.meta['gender']
 

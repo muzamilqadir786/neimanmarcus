@@ -20,7 +20,7 @@ class NeimanmarcusItem(scrapy.Item):
     price = scrapy.Field()
     currency = scrapy.Field()
     category = scrapy.Field()
-    subcategory = scrapy.Field()
+    # subcategory = scrapy.Field()
     gender = scrapy.Field()
     store = scrapy.Field()
     description = scrapy.Field()
