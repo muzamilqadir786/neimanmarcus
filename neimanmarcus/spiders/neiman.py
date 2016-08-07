@@ -49,12 +49,14 @@ class NeimanSpider(scrapy.Spider):
 		hxs = Selector(response)
 		#pagination
 		total_pages = hxs.xpath('normalize-space(//ul[@id="epagingTop"]/li[@class="pageOffset"][last()]/a/text())').extract()
+
 		total_items = hxs.xpath('//span[@id="numItems"]/text()').extract()
+		
 		if total_items:
-			pages = int(total_items[0]) / 120			
+			# pages = int(total_items[0]) / 120			
 			catid = response.url.rsplit('/',2)[-2].split('_')[0]
-			for page_num in range(2, pages+1):			
-				link = urlparse.urljoin(response.url,'#userConstrainedResults=true&refinements=&page={0}&pageSize=120&sort=PCS_SORT&definitionPath=/nm/commerce/pagedef_rwd/template/EndecaDrivenHome&onlineOnly=&allStoresInput=false&rwd=true&catalogId={1}&selectedRecentSize=&activeFavoriteSizesCount=0&activeInteraction=true'.format(page_num,catid))				
+			for page_num in range(2, int(total_pages[0])+1):			
+				link = urlparse.urljoin(response.url,'#userConstrainedResults=true&refinements=&page={0}&pageSize=30&sort=PCS_SORT&definitionPath=/nm/commerce/pagedef_rwd/template/EndecaDrivenHome&onlineOnly=&allStoresInput=false&rwd=true&catalogId={1}&selectedRecentSize=&activeFavoriteSizesCount=0&activeInteraction=true'.format(page_num,catid))				
 				request = Request(link,self.item_list,dont_filter=True)		
 				request.meta['category'] = response.meta['category']
 				yield request
